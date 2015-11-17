@@ -218,6 +218,7 @@ class LogObject(object):
         '''
         self.logger.info(message, extra=extra)
 
+    @property
     def name(self):
         '''
         Returns the logger name
@@ -233,7 +234,7 @@ class LogObject(object):
         if 'timestamp' not in dict:
             dict['timestamp'] = self._get_time()
         if 'logger' not in dict:
-            dict['logger'] = self.name()
+            dict['logger'] = self.name
         return dict
 
     def _get_time(self):
