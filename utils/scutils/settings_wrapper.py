@@ -1,4 +1,6 @@
 import importlib
+import imp
+import sys
 
 
 class SettingsWrapper(object):
@@ -6,7 +8,6 @@ class SettingsWrapper(object):
     Wrapper for loading settings files and merging them with overrides
     '''
 
-    default_settings = "settings"
     my_settings = {}
     ignore = [
         '__builtins__',
@@ -19,15 +20,38 @@ class SettingsWrapper(object):
     def _init__(self):
         pass
 
-    def load(self, name='localsettings.py'):
+    def load(self, local='localsettings.py', default='settings.py'):
         '''
         Load the settings dict
 
-        @param name: The local settings filename to use
+        @param local: The local settings filename to use
+        @param default: The default settings module to read
         @return: A dict of the loaded settings
         '''
-        self._load_defaults()
-        self._load_custom(name)
+        self._load_defaults(default)
+        self._load_custom(local)
+
+        return self.settings()
+
+    def load_from_string(self, settings_string='', module_name='customsettings'):
+        '''
+        Loads settings from a settings_string. Expects an escaped string like
+        the following:
+            "NAME=\'stuff\'\nTYPE=[\'item\']\n"
+
+        @param settings_string: The string with your settings
+        @return: A dict of loaded settings
+        '''
+        try:
+            mod = imp.new_module(module_name)
+            exec settings_string in mod.__dict__
+        except TypeError:
+            print "Could not import settings"
+        self.my_settings = {}
+        try:
+            self.my_settings = self._convert_to_dict(mod)
+        except ImportError:
+            print "Settings unable to be loaded"
 
         return self.settings()
 
@@ -37,13 +61,16 @@ class SettingsWrapper(object):
         '''
         return self.my_settings
 
-    def _load_defaults(self):
+    def _load_defaults(self, default='settings.py'):
         '''
         Load the default settings
         '''
+        if default[-3:] == '.py':
+            default = default[:-3]
+
         self.my_settings = {}
         try:
-            settings = importlib.import_module(self.default_settings)
+            settings = importlib.import_module(default)
             self.my_settings = self._convert_to_dict(settings)
         except ImportError:
             print "No default settings found"
